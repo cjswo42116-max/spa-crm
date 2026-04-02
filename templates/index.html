@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="다희비서">
+  <meta name="theme-color" content="#7C3AED">
+  <title>다희 스파 비서</title>
+  <link rel="manifest" href="/static/manifest.json">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <style>
+    :root { --pu:#7C3AED;--pu2:#EDE9FE;--gr:#10B981;--or:#F59E0B;--rd:#EF4444; }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    body{background:#F5F3FF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:0;padding:0 0 32px}
+
+    /* Header */
+    .hdr{background:linear-gradient(135deg,#7C3AED,#9333EA);color:white;padding:14px 16px 10px;
+         position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(124,58,237,.4)}
+    .hdr h1{font-size:1rem;font-weight:800;margin:0}
+    .hdr small{font-size:.68rem;opacity:.8}
+
+    /* Sections */
+    .sec{background:white;border-radius:16px;margin:10px 12px;
+         box-shadow:0 2px 10px rgba(0,0,0,.07);overflow:hidden}
+    .sec-hdr{display:flex;align-items:center;justify-content:space-between;
+             padding:14px 16px;cursor:pointer;user-select:none;background:white;}
+    .sec-hdr h2{font-size:.9rem;font-weight:800;margin:0;display:flex;align-items:center;gap:8px}
+    .sec-body{padding:0 14px 14px}
+
+    /* KPI strip */
+    .kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px 12px}
+    .kpi{background:white;border-radius:14px;padding:12px 8px;text-align:center;
+         box-shadow:0 2px 8px rgba(0,0,0,.06)}
+    .kpi .n{font-size:1.4rem;font-weight:800;line-height:1.1}
+    .kpi .l{font-size:.62rem;color:#6B7280;margin-top:2px}
+
+    /* Customer cards */
+    .cc{background:#FAFAFA;border-radius:12px;padding:12px 14px;margin-bottom:8px;
+        border-left:4px solid #E5E7EB;cursor:pointer;transition:transform .1s}
+    .cc:active{transform:scale(.98)}
+    .cc.urg{border-left-color:var(--rd);background:#FFF5F5}
+    .cc.warn{border-left-color:var(--or);background:#FFFBF0}
+    .cc.ok{border-left-color:var(--gr);background:#F0FDF4}
+    .cc-name{font-size:1rem;font-weight:800;color:#111827}
+    .cc-meta{font-size:.75rem;color:#6B7280;margin-top:4px}
+    .day-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.65rem;font-weight:700;margin-left:4px}
+    .db-rd{background:#FEE2E2;color:var(--rd)}
+    .db-or{background:#FEF3C7;color:#D97706}
+    .db-gr{background:#D1FAE5;color:#065F46}
+
+    /* Buttons */
+    .btn-pu{background:var(--pu);color:white;border:none;border-radius:12px;padding:13px 0;
+            font-weight:700;font-size:.9rem;width:100%;cursor:pointer;transition:background .15s}
+    .btn-pu:active{background:#6D28D9}
+    .btn-gr{background:var(--gr);color:white;border:none;border-radius:12px;padding:13px 0;
+            font-weight:700;font-size:.9rem;width:100%;cursor:pointer}
+    .btn-copy{background:var(--pu2);color:var(--pu);border:none;border-radius:10px;
+              padding:8px 14px;font-size:.8rem;font-weight:700;cursor:pointer}
+    .btn-quick{background:#F3F4F6;color:#374151;border:none;border-radius:10px;
+               padding:10px 0;font-size:.82rem;font-weight:700;cursor:pointer;flex:1}
+    .btn-quick:active{background:#E5E7EB}
+    .btn-sm-pu{background:var(--pu2);color:var(--pu);border:none;border-radius:8px;
+               padding:4px 10px;font-size:.72rem;font-weight:700;cursor:pointer;white-space:nowrap}
+
+    /* Upload zone */
+    .upz{border:2px dashed #DDD6FE;border-radius:12px;padding:18px;text-align:center;
+         cursor:pointer;transition:border-color .2s;background:white}
+    .upz:hover{border-color:var(--pu)}
+    .upz i{font-size:1.8rem;color:var(--pu);opacity:.6}
+    .upz p{font-size:.78rem;color:#9CA3AF;margin:4px 0 0}
+
+    /* Table */
+    .spa-table{font-size:.76rem;margin:0}
+    .spa-table th{background:var(--pu2);color:var(--pu);font-weight:700;white-space:nowrap;
+                  padding:8px 10px !important;position:sticky;top:0}
+    .spa-table td{padding:8px 10px !important;vertical-align:middle}
+    .spa-table tbody tr:hover{background:#F9F7FF;cursor:pointer}
+    .exp-rd{color:var(--rd);font-weight:700}
+    .exp-or{color:#D97706;font-weight:600}
+    .exp-yw{color:#92400E}
+
+    /* Notes row (expanded) */
+    .notes-row td{background:#F9FAFB;padding:10px 14px !important}
+    .notes-input{width:100%;border:1px solid #DDD6FE;border-radius:8px;
+                 padding:6px 10px;font-size:.78rem;resize:none}
+    .followup-input{border:1px solid #DDD6FE;border-radius:8px;
+                    padding:5px 8px;font-size:.78rem;width:140px}
+
+    /* SMS preview */
+    .sms-box{background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;
+             padding:14px;font-size:.8rem;line-height:1.65;white-space:pre-wrap;margin-bottom:12px}
+
+    /* Balance display */
+    .bal-box{background:linear-gradient(135deg,#7C3AED,#9333EA);color:white;
+             border-radius:14px;padding:16px;text-align:center;margin-bottom:16px}
+    .bal-box .lbl{font-size:.72rem;opacity:.85;margin-bottom:4px}
+    .bal-box .amt{font-size:1.9rem;font-weight:800}
+
+    /* Success banner */
+    .success-banner{background:#D1FAE5;color:#065F46;border-radius:12px;
+                    padding:12px;text-align:center;font-weight:700;margin-bottom:12px}
+
+    /* Alert items */
+    .al-item{background:#FAFAFA;border-radius:10px;padding:9px 12px;margin-bottom:6px;
+             font-size:.76rem;border-left:3px solid var(--or)}
+    .al-item.dormant{border-left-color:var(--rd)}
+    .al-item.followup{border-left-color:#6366F1}
+
+    /* Miss items */
+    .miss-item{background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;
+               padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
+
+    /* Toast */
+    #toastArea{position:fixed;top:68px;right:12px;z-index:9999}
+    .t-pill{background:#1F2937;color:white;padding:9px 16px;border-radius:22px;
+            font-size:.78rem;font-weight:600;margin-bottom:5px;
+            box-shadow:0 4px 14px rgba(0,0,0,.25);animation:fadeUp .25s ease;max-width:240px}
+    .t-pill.ok{background:var(--gr)}  .t-pill.err{background:var(--rd)}
+    .t-pill.info{background:var(--pu)}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+    /* Modal */
+    .modal-content{border-radius:20px !important}
+    .modal-header{border-bottom:none !important;padding-bottom:0 !important}
+    .amount-input{font-size:1.5rem !important;font-weight:700 !important;text-align:center !important;
+                  border-radius:12px !important}
+    .pending-badge{display:inline-flex;align-items:center;gap:4px;background:#FEF2F2;color:var(--rd);
+                   border-radius:10px;padding:4px 10px;font-size:.72rem;font-weight:700;border:1px solid #FECACA}
+
+    /* Chart container */
+    .chart-wrap{position:relative;height:200px;padding:4px 0}
+
+    /* Collapse arrow */
+    .collapse-arrow{transition:transform .25s;font-size:1rem;color:#9CA3AF}
+    .collapsed .collapse-arrow{transform:rotate(-90deg)}
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="hdr d-flex justify-content-between align-items-center">
+  <div>
+    <h1>🌿 다희 스파 비서</h1>
+    <small id="hdrDate"></small>
+  </div>
+  <div class="d-flex gap-2 align-items-center">
+    <span id="pendBadge" class="pending-badge" style="display:none" onclick="scrollTo('#sec-pending')">
+      <i class="bi bi-chat-dots-fill"></i><span id="pendCnt">0</span>건
+    </span>
+    <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:white;border:none" onclick="manualCheck()">
+      <i class="bi bi-bell-fill"></i>
+    </button>
+    <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:white;border:none"
+            data-bs-toggle="modal" data-bs-target="#setModal"><i class="bi bi-gear-fill"></i></button>
+  </div>
+</div>
+
+<div id="toastArea"></div>
+
+<!-- KPI Strip -->
+<div class="kpi-strip">
+  <div class="kpi"><div class="n" style="color:var(--pu)" id="kTotal">—</div><div class="l">전체</div></div>
+  <div class="kpi"><div class="n" style="color:var(--rd)" id="kDorm">—</div><div class="l">미방문</div></div>
+  <div class="kpi"><div class="n" style="color:var(--or)" id="kOver">—</div><div class="l">주기초과</div></div>
+  <div class="kpi"><div class="n" style="color:var(--gr);font-size:1rem" id="kBal">—</div><div class="l">총잔여액</div></div>
+</div>
+
+<!-- ── CSV 업로드 ── -->
+<div class="sec">
+  <div class="sec-hdr" onclick="toggleSec(this)">
+    <h2><i class="bi bi-upload" style="color:var(--pu)"></i> 파일 업로드</h2>
+    <i class="bi bi-chevron-down collapse-arrow"></i>
+  </div>
+  <div class="sec-body">
+    <div class="row g-2">
+      <div class="col-6">
+        <div class="upz" onclick="document.getElementById('mFile').click()">
+          <i class="bi bi-people-fill"></i>
+          <p>정액권고객.csv</p>
+          <div id="upM" style="color:var(--pu);font-size:.72rem;font-weight:700;margin-top:4px"></div>
+        </div>
+        <input type="file" id="mFile" accept=".csv" style="display:none" onchange="uploadMembers(this)">
+      </div>
+      <div class="col-6">
+        <div class="upz" onclick="document.getElementById('sFile').click()">
+          <i class="bi bi-graph-up-arrow"></i>
+          <p>매출상세조회.csv</p>
+          <div id="upS" style="color:var(--pu);font-size:.72rem;font-weight:700;margin-top:4px"></div>
+        </div>
+        <input type="file" id="sFile" accept=".csv" style="display:none" onchange="uploadSales(this)">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 긴급 관리 (방문주기 초과) ── -->
+<div class="sec" id="sec-overdue">
+  <div class="sec-hdr" onclick="toggleSec(this)">
+    <h2><i class="bi bi-exclamation-triangle-fill" style="color:var(--rd)"></i>
+      긴급 관리 <span class="badge rounded-pill bg-danger ms-1" id="overdueCount" style="font-size:.65rem">0</span>
+    </h2>
+    <i class="bi bi-chevron-down collapse-arrow"></i>
+  </div>
+  <div class="sec-body" id="overdueList">
+    <div style="color:#9CA3AF;font-size:.8rem;text-align:center;padding:8px 0">방문주기 초과 고객 없음</div>
+  </div>
+</div>
+
+<!-- ── 오늘의 작살 (15일 미방문) ── -->
+<div class="sec" id="sec-jachsal">
+  <div class="sec-hdr" onclick="toggleSec(this)">
+    <h2><i class="bi bi-fish" style="color:var(--or)"></i>
+      오늘의 작살 <span class="badge rounded-pill ms-1" style="background:var(--or);font-size:.65rem" id="jachsalCount">0</span>
+    </h2>
+    <i class="bi bi-chevron-down collapse-arrow"></i>
+  </div>
+  <div class="sec-body" id="jachsalList">
+    <div style="color:#9CA3AF;font-size:.8rem;text-align:center;padding:8px 0">15일 미방문 고객 없음</div>
+  </div>
+</div>
+
+<!-- ── 오늘 문자 미발송 ── -->
+<div class="sec" id="sec-pending" style="display:none">
+  <div class="sec-hdr" onclick="toggleSec(this)">
+    <h2><i class="bi bi-chat-x-fill" style="color:var(--rd)"></i> 문자 미발송</h2>
+    <i class="bi bi-chevron-down collapse-arrow"></i>
+  </div>
+  <div class="sec-body" id="pendingList"></div>
+</div>
+
+<!-- ── 매출 트렌드 ── -->
+<div class="sec" id="sec-chart">
+  <div class="sec-hdr" onclick="toggleSec(this)">
+    <h2><i class="bi bi-bar-chart-fill" style="color:var(--gr)"></i> 매출 트렌드</h2>
+    <i class="bi bi-chevron-down collapse-arrow"></i>
+  </div>
+  <div class="sec-body">
+    <div class="chart-wrap"><canvas id="salesChart"></canvas></div>
+    <div id="noChartData" style="display:none;text-align:center;color:#9CA3AF;font-size:.8rem;padding:20px 0">
+      매출 CSV를 업로드하면 그래프가 나타납니다
+    </div>
+  </div>
+</div>
+
+<!-- ── 전체 고객 명단 ── -->
+<div class="sec">
+  <div class="sec-hdr" onclick="toggleSec(this)">
+    <h2><i class="bi bi-table" style="color:var(--pu)"></i> 전체 고객 명단</h2>
+    <div class="d-flex align-items-center gap-2" onclick="event.stopPropagation()">
+      <button class="btn-sm-pu" onclick="openAdd()"><i class="bi bi-plus-lg"></i> 추가</button>
+      <i class="bi bi-chevron-down collapse-arrow"></i>
+    </div>
+  </div>
+  <div class="sec-body" style="padding:0 0 12px">
+    <div style="overflow-x:auto">
+      <table class="table table-hover spa-table">
+        <thead><tr>
+          <th>성명</th><th>최종방문</th><th>경과</th><th>잔여액</th><th>만료</th><th>주기</th><th>메모/차감</th>
+        </tr></thead>
+        <tbody id="custTbl"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── 최근 슬랙 알림 ── -->
+<div class="sec">
+  <div class="sec-hdr" onclick="toggleSec(this)">
+    <h2><i class="bi bi-bell" style="color:var(--pu)"></i> 슬랙 알림 내역</h2>
+    <i class="bi bi-chevron-down collapse-arrow"></i>
+  </div>
+  <div class="sec-body" id="alertLog">
+    <div style="color:#9CA3AF;font-size:.8rem;text-align:center;padding:8px 0">알림 내역 없음</div>
+  </div>
+</div>
+
+
+<!-- ════ MODALS ════ -->
+
+<!-- 차감 모달 -->
+<div class="modal fade" id="deductModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="dmName">차감</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4 pb-4">
+        <div id="dStep1">
+          <div class="bal-box">
+            <div class="lbl">현재 잔여액</div>
+            <div class="amt" id="dmBal">—</div>
+          </div>
+          <div class="d-flex gap-2 mb-3">
+            <button class="btn-quick" onclick="setAmt(50000)">5만</button>
+            <button class="btn-quick" onclick="setAmt(80000)">8만</button>
+            <button class="btn-quick" onclick="setAmt(100000)">10만</button>
+            <button class="btn-quick" onclick="setAmt(150000)">15만</button>
+          </div>
+          <input type="number" class="form-control amount-input mb-3" id="dmAmt"
+                 placeholder="차감 금액" inputmode="numeric">
+          <button class="btn-pu" onclick="doDeduct()">
+            <i class="bi bi-arrow-down-circle-fill me-1"></i> 차감 실행
+          </button>
+        </div>
+        <div id="dStep2" style="display:none">
+          <div class="success-banner" id="dResult"></div>
+          <div style="font-size:.82rem;font-weight:700;color:#374151;margin-bottom:6px">📱 발송 문자</div>
+          <div class="sms-box" id="dSms"></div>
+          <div class="d-flex gap-2 mb-2">
+            <button class="btn-copy flex-fill" onclick="copySms()"><i class="bi bi-clipboard"></i> 복사</button>
+            <button class="btn-gr flex-fill" id="dSentBtn" onclick="markSmsSent()"
+                    style="border-radius:10px;padding:10px;font-size:.82rem">
+              <i class="bi bi-check2-circle"></i> 전송 완료
+            </button>
+          </div>
+          <button class="btn btn-outline-secondary w-100 rounded-3" data-bs-dismiss="modal">닫기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 작살 문자 모달 -->
+<div class="modal fade" id="msgModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">🎣 작살 낚시 문자</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4 pb-4">
+        <div class="sms-box" id="msgText"></div>
+        <div class="d-flex gap-2">
+          <button class="btn-copy flex-fill" onclick="copyMsg()"><i class="bi bi-clipboard"></i> 복사</button>
+          <button class="btn-gr flex-fill" id="msgSentBtn"
+                  style="border-radius:10px;padding:10px;font-size:.82rem">
+            <i class="bi bi-check2-circle"></i> 발송 완료
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 고객 추가/수정 모달 -->
+<div class="modal fade" id="custModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="cmTitle">고객 추가</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4">
+        <input type="hidden" id="cmId">
+        <div class="row g-2 mb-2">
+          <div class="col-7">
+            <label class="form-label fw-semibold" style="font-size:.8rem">성명 *</label>
+            <input type="text" class="form-control form-control-sm" id="cmName" placeholder="이보경">
+          </div>
+          <div class="col-5">
+            <label class="form-label fw-semibold" style="font-size:.8rem">유형</label>
+            <select class="form-select form-select-sm" id="cmType">
+              <option value="정액권자">정액권자</option>
+              <option value="도민">도민</option>
+              <option value="관광객">관광객</option>
+            </select>
+          </div>
+        </div>
+        <div class="row g-2 mb-2">
+          <div class="col-6">
+            <label class="form-label fw-semibold" style="font-size:.8rem">최종방문일</label>
+            <input type="date" class="form-control form-control-sm" id="cmVisit">
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-semibold" style="font-size:.8rem">잔여액</label>
+            <input type="number" class="form-control form-control-sm" id="cmBal">
+          </div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label fw-semibold" style="font-size:.8rem">만료일</label>
+          <input type="text" class="form-control form-control-sm" id="cmExp" placeholder="무제한 또는 2025-12-31">
+        </div>
+        <div class="mb-2">
+          <label class="form-label fw-semibold" style="font-size:.8rem">손님 특징 메모</label>
+          <textarea class="notes-input" id="cmNotes" rows="3" placeholder="예) 민감성 피부, 아로마 선호, 허리 주의"></textarea>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:.8rem">
+            <i class="bi bi-alarm" style="color:var(--pu)"></i> 후속 관리 날짜 (슬랙 알림)
+          </label>
+          <input type="date" class="form-control form-control-sm" id="cmFollowup">
+          <div class="form-text">지정일 오전 9시에 슬랙으로 알림</div>
+        </div>
+        <button class="btn-pu mb-2" onclick="saveCust()">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 설정 모달 -->
+<div class="modal fade" id="setModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-slack text-warning"></i> 슬랙 설정</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4 pb-4">
+        <label class="form-label fw-semibold" style="font-size:.82rem">Slack Incoming Webhook URL</label>
+        <input type="url" class="form-control form-control-sm mb-1" id="webhookInput"
+               placeholder="https://hooks.slack.com/services/...">
+        <div class="form-text mb-3">슬랙 → 채널 → Incoming Webhooks에서 복사</div>
+        <div class="d-flex gap-2 mb-3">
+          <button class="btn btn-sm btn-outline-secondary flex-fill" onclick="testSlack()">
+            <i class="bi bi-send"></i> 테스트
+          </button>
+          <button class="btn btn-sm btn-pu flex-fill" style="width:auto" onclick="saveSettings()">
+            <i class="bi bi-check-lg"></i> 저장
+          </button>
+        </div>
+        <hr class="my-2">
+        <div style="font-size:.78rem;color:#6B7280;line-height:1.7">
+          • 매일 09:00 — 미방문·주기초과·만료임박·후속관리 알림<br>
+          • 매일 18:00 — 문자 미발송 고객 알림<br>
+          • 매주 월요일 09:05 — 매출 파일 업로드 리마인더
+        </div>
+        <hr class="my-2">
+        <button class="btn btn-sm btn-outline-danger w-100" onclick="manualCheck()">
+          <i class="bi bi-bell"></i> 지금 알림 체크 실행
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ── Modals ──
+const deductModal = new bootstrap.Modal('#deductModal');
+const msgModal    = new bootstrap.Modal('#msgModal');
+const custModal   = new bootstrap.Modal('#custModal');
+
+// ── State ──
+let curDeductId=null, curDeductSmsId=null, curSmsText='';
+let expandedRows = new Set();
+let salesChart = null;
+
+// ── Init ──
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('hdrDate').textContent =
+    new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+  loadAll();
+  loadSettings();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/static/sw.js').catch(()=>{});
+});
+
+async function loadAll() {
+  await Promise.all([loadDashboard(), loadCustomers(), loadChart()]);
+}
+
+// ── Section collapse ──
+function toggleSec(hdr) {
+  const body = hdr.nextElementSibling;
+  const arrow = hdr.querySelector('.collapse-arrow');
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : '';
+  arrow.style.transform = open ? 'rotate(-90deg)' : '';
+}
+
+// ── Toast ──
+function toast(msg, type='ok') {
+  const el = document.createElement('div');
+  el.className = `t-pill ${type}`;
+  el.textContent = msg;
+  document.getElementById('toastArea').appendChild(el);
+  setTimeout(()=>el.remove(), 2800);
+}
+
+// ── Dashboard ──
+async function loadDashboard() {
+  const d = await fetch('/api/dashboard').then(r=>r.json());
+  document.getElementById('kTotal').textContent = d.total_customers;
+  document.getElementById('kDorm').textContent  = d.dormant_count;
+  document.getElementById('kOver').textContent  = d.overdue_count;
+  document.getElementById('kBal').textContent   = Math.round((d.total_balance||0)/10000)+'만';
+
+  // Pending SMS badge
+  const pb = document.getElementById('pendBadge');
+  document.getElementById('pendCnt').textContent = d.pending_sms;
+  pb.style.display = d.pending_sms > 0 ? 'inline-flex' : 'none';
+
+  // Overdue cycle
+  renderOverdue(d.overdue_cycle||[]);
+  document.getElementById('overdueCount').textContent = (d.overdue_cycle||[]).length;
+
+  // Jachsal
+  renderJachsal(d.dormant_15||[]);
+  document.getElementById('jachsalCount').textContent = (d.dormant_15||[]).length;
+
+  // Pending SMS section
+  await loadPending(d.pending_sms);
+
+  // Alert log
+  renderAlertLog(d.recent_alerts||[]);
+}
+
+function renderOverdue(list) {
+  const el = document.getElementById('overdueList');
+  if (!list.length) {
+    el.innerHTML = '<div style="color:#9CA3AF;font-size:.8rem;text-align:center;padding:8px 0">방문주기 초과 고객 없음 ✅</div>';
+    return;
+  }
+  el.innerHTML = list.map(c => {
+    const over = (c.days_since_visit||0) - (c.avg_visit_cycle||0);
+    return `<div class="cc urg" onclick="openDeductModal(${c.id},'${esc(c.name)}',${c.balance||0})">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="cc-name">${c.name}
+            <span class="day-badge db-rd">+${over}일 초과</span>
+          </div>
+          <div class="cc-meta">평균주기 ${c.avg_visit_cycle}일 · 현재 ${c.days_since_visit}일 경과 · 잔여 ${(c.balance||0).toLocaleString()}원</div>
+        </div>
+        <button class="btn-sm-pu ms-2" onclick="event.stopPropagation();openMsgModal('${esc(c.name)}','${esc(c.jachsal_msg||'')}')">
+          <i class="bi bi-chat-dots"></i> 문자
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderJachsal(list) {
+  const el = document.getElementById('jachsalList');
+  if (!list.length) {
+    el.innerHTML = '<div style="color:#9CA3AF;font-size:.8rem;text-align:center;padding:8px 0">15일 미방문 고객 없음 🎉</div>';
+    return;
+  }
+  el.innerHTML = list.map(c => {
+    const cls = (c.days_since_visit||0)>=30?'urg':'warn';
+    const bc  = (c.days_since_visit||0)>=30?'db-rd':'db-or';
+    return `<div class="cc ${cls}" onclick="openDeductModal(${c.id},'${esc(c.name)}',${c.balance||0})">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="cc-name">${c.name}
+            <span class="day-badge ${bc}">${c.days_since_visit}일</span>
+          </div>
+          <div class="cc-meta">잔여 ${(c.balance||0).toLocaleString()}원 · ${c.expiry||'무제한'} · 최종: ${c.last_visit||'없음'}</div>
+        </div>
+        <button class="btn-sm-pu ms-2" onclick="event.stopPropagation();openMsgModal('${esc(c.name)}','${esc(c.jachsal_msg||'')}')">
+          <i class="bi bi-chat-dots"></i> 문자
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function loadPending(count) {
+  const sec = document.getElementById('sec-pending');
+  const el  = document.getElementById('pendingList');
+  if (!count) { sec.style.display='none'; return; }
+  sec.style.display='';
+  const rows = await fetch('/api/deductions/pending').then(r=>r.json());
+  if (!rows.length) { sec.style.display='none'; return; }
+  el.innerHTML = rows.map(r=>`
+    <div class="miss-item">
+      <div>
+        <div style="font-weight:700;color:var(--rd)">${r.customer_name}</div>
+        <div style="font-size:.72rem;color:#9CA3AF">${(r.amount||0).toLocaleString()}원 · ${(r.created_at||'').substring(0,16)}</div>
+      </div>
+      <button class="btn btn-sm" style="background:#D1FAE5;color:#065F46;border:none;border-radius:8px;font-size:.72rem;font-weight:700"
+              onclick="markPendingSms(${r.id},this)"><i class="bi bi-check2"></i> 완료</button>
+    </div>`).join('');
+}
+
+async function markPendingSms(did, btn) {
+  await fetch(`/api/deductions/${did}/sms_sent`,{method:'POST'});
+  btn.closest('.miss-item').style.opacity='.35';
+  btn.disabled=true;
+  toast('발송 완료 기록!');
+  setTimeout(loadDashboard, 600);
+}
+
+function renderAlertLog(alerts) {
+  const el = document.getElementById('alertLog');
+  if (!alerts.length) { el.innerHTML='<div style="color:#9CA3AF;font-size:.8rem;text-align:center;padding:8px 0">알림 없음</div>'; return; }
+  el.innerHTML = alerts.slice(0,10).map(a=>{
+    const t = a.alert_type==='dormant'?'dormant':a.alert_type==='followup'?'followup':'';
+    return `<div class="al-item ${t}">
+      <strong>${a.customer_name||''}</strong>
+      <div style="color:#6B7280">${a.message||''}</div>
+      <div style="font-size:.68rem;color:#9CA3AF">${(a.sent_at||'').substring(0,16)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Customer Table ──
+async function loadCustomers() {
+  const cs = await fetch('/api/customers').then(r=>r.json());
+  renderCustTable(cs);
+}
+
+function renderCustTable(cs) {
+  const today = new Date();
+  const tb = document.getElementById('custTbl');
+  if (!cs.length) {
+    tb.innerHTML='<tr><td colspan="7" class="text-center py-4 text-muted">고객 없음 — CSV 업로드 또는 직접 추가</td></tr>';
+    return;
+  }
+  const rows = [];
+  cs.forEach(c => {
+    let dayStr='—', expHtml=c.expiry||'무제한', expCls='';
+    if (c.days_since_visit!=null) dayStr=c.days_since_visit+'일';
+    if (c.days_to_expiry!=null) {
+      const dl=c.days_to_expiry;
+      expCls=dl<0?'exp-rd':dl<=15?'exp-rd':dl<=30?'exp-or':dl<=90?'exp-yw':'';
+      expHtml=`<span class="${expCls}">D-${dl}</span>`;
+    }
+    const cycBadge = c.avg_visit_cycle
+      ? `<span class="badge rounded-pill" style="background:#E0E7FF;color:#4338CA;font-size:.6rem">${c.avg_visit_cycle}일</span>`
+      : '—';
+    const urgStyle = c.overdue_cycle ? 'background:#FFF5F5' : '';
+
+    rows.push(`<tr style="${urgStyle}" id="r-${c.id}">
+      <td><strong class="clickable" onclick="openDeductModal(${c.id},'${esc(c.name)}',${c.balance||0})">${c.name}</strong>
+        ${c.overdue_cycle?'<span class="badge bg-danger ms-1" style="font-size:.58rem">주기초과</span>':''}
+        ${c.follow_up_date?`<br><small style="color:#6366F1;font-size:.65rem"><i class="bi bi-alarm"></i> ${c.follow_up_date}</small>`:''}
+      </td>
+      <td style="white-space:nowrap;font-size:.72rem">${c.last_visit||'—'}</td>
+      <td>${dayStr}</td>
+      <td style="white-space:nowrap">${(c.balance||0).toLocaleString()}원</td>
+      <td>${expHtml}</td>
+      <td>${cycBadge}</td>
+      <td>
+        <div class="d-flex gap-1 flex-wrap">
+          <button class="btn btn-sm p-1" style="background:var(--pu2);color:var(--pu);border:none;border-radius:6px"
+                  onclick="toggleNotes(${c.id})" title="메모">
+            <i class="bi bi-journal-text" style="font-size:.75rem"></i>
+          </button>
+          <button class="btn btn-sm p-1" style="background:#D1FAE5;color:#065F46;border:none;border-radius:6px"
+                  onclick="openDeductModal(${c.id},'${esc(c.name)}',${c.balance||0})" title="차감">
+            <i class="bi bi-dash-circle" style="font-size:.75rem"></i>
+          </button>
+          <button class="btn btn-sm p-1" style="background:#FEF3C7;color:#92400E;border:none;border-radius:6px"
+                  onclick="openEdit(${JSON.stringify(c).replace(/"/g,'&quot;')})" title="수정">
+            <i class="bi bi-pencil" style="font-size:.75rem"></i>
+          </button>
+        </div>
+      </td>
+    </tr>
+    <tr id="nr-${c.id}" style="display:none">
+      <td colspan="7" class="notes-row">
+        <div style="font-size:.78rem;font-weight:700;color:var(--pu);margin-bottom:6px">
+          <i class="bi bi-journal-text"></i> ${c.name} 특징 메모
+        </div>
+        <textarea class="notes-input mb-2" id="notes-${c.id}" rows="3"
+                  placeholder="예) 민감성 피부, 아로마 선호, 허리 조심...">${c.notes||''}</textarea>
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <label style="font-size:.75rem;font-weight:600;color:#374151;white-space:nowrap">
+            <i class="bi bi-alarm" style="color:#6366F1"></i> 후속 관리 날짜
+          </label>
+          <input type="date" class="followup-input" id="fu-${c.id}" value="${c.follow_up_date||''}">
+        </div>
+        <button class="btn-sm-pu" onclick="saveNotes(${c.id})">저장</button>
+      </td>
+    </tr>`);
+  });
+  tb.innerHTML = rows.join('');
+}
+
+function toggleNotes(id) {
+  const nr = document.getElementById(`nr-${id}`);
+  nr.style.display = nr.style.display==='none' ? '' : 'none';
+  if (nr.style.display !== 'none') {
+    nr.querySelector('textarea')?.focus();
+  }
+}
+
+async function saveNotes(id) {
+  const notes = document.getElementById(`notes-${id}`).value;
+  const fu    = document.getElementById(`fu-${id}`).value;
+  await fetch(`/api/customers/${id}/notes`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({notes, follow_up_date: fu||null})
+  });
+  toast('메모 저장 완료 ✅');
+  loadCustomers();
+}
+
+// ── Chart ──
+async function loadChart() {
+  const data = await fetch('/api/sales/summary').then(r=>r.json());
+  if (!data.length) {
+    document.getElementById('noChartData').style.display='';
+    return;
+  }
+  document.getElementById('noChartData').style.display='none';
+  const labels   = data.map(d=>d.month);
+  const visits   = data.map(d=>d.visits);
+  const revenues = data.map(d=>(d.revenue||0)/10000);
+
+  if (salesChart) salesChart.destroy();
+  salesChart = new Chart(document.getElementById('salesChart'), {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'방문 건수',data:visits,backgroundColor:'rgba(124,58,237,.7)',
+         borderRadius:6,yAxisID:'y'},
+        {label:'매출(만원)',data:revenues,type:'line',borderColor:'#10B981',
+         backgroundColor:'rgba(16,185,129,.12)',tension:.4,fill:true,yAxisID:'y2'}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{font:{size:10},boxWidth:10}}},
+      scales:{
+        y:{display:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:9}}},
+        y2:{display:true,position:'right',grid:{display:false},ticks:{font:{size:9}}}
+      }
+    }
+  });
+}
+
+// ── Upload ──
+async function uploadMembers(input) {
+  const file=input.files[0]; if(!file) return;
+  const fd=new FormData(); fd.append('file',file);
+  document.getElementById('upM').textContent='파싱 중...';
+  const d=await fetch('/api/upload/members',{method:'POST',body:fd}).then(r=>r.json());
+  if(d.ok) {
+    document.getElementById('upM').textContent=`✅ ${d.upserted}명 등록`;
+    toast(`${d.upserted}명 등록 완료`);
+    console.log('컬럼:', d.columns, '샘플:', d.sample);
+    loadAll();
+  } else {
+    document.getElementById('upM').textContent='❌ '+d.error;
+    toast(d.error,'err');
+  }
+  input.value='';
+}
+
+async function uploadSales(input) {
+  const file=input.files[0]; if(!file) return;
+  const fd=new FormData(); fd.append('file',file);
+  document.getElementById('upS').textContent='분석 중...';
+  const d=await fetch('/api/upload/sales',{method:'POST',body:fd}).then(r=>r.json());
+  if(d.ok) {
+    document.getElementById('upS').textContent=`✅ ${d.rows_inserted}건 / 주기 ${d.cycles_updated}명`;
+    toast(`매출 ${d.rows_inserted}건 분석 완료`);
+    loadAll();
+  } else {
+    document.getElementById('upS').textContent='❌ '+d.error;
+    toast(d.error,'err');
+  }
+  input.value='';
+}
+
+// ── Deduct Modal ──
+function openDeductModal(id, name, balance) {
+  curDeductId=id; curDeductSmsId=null;
+  document.getElementById('dmName').textContent=name+' · 차감';
+  document.getElementById('dmBal').textContent=(balance||0).toLocaleString()+'원';
+  document.getElementById('dmAmt').value='';
+  document.getElementById('dStep1').style.display='';
+  document.getElementById('dStep2').style.display='none';
+  deductModal.show();
+  setTimeout(()=>document.getElementById('dmAmt').focus(),400);
+}
+function setAmt(n){document.getElementById('dmAmt').value=n}
+async function doDeduct() {
+  const amt=parseInt(document.getElementById('dmAmt').value)||0;
+  if(!amt){toast('금액 입력','err');return}
+  const d=await fetch(`/api/customers/${curDeductId}/deduct`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({amount:amt})
+  }).then(r=>r.json());
+  if(!d.ok){toast(d.error||'오류','err');return}
+  curDeductSmsId=d.deduction_id; curSmsText=d.sms_message;
+  document.getElementById('dResult').textContent=
+    `✅ ${amt.toLocaleString()}원 차감! 잔여: ${d.balance_after.toLocaleString()}원`;
+  document.getElementById('dSms').textContent=d.sms_message;
+  document.getElementById('dStep1').style.display='none';
+  document.getElementById('dStep2').style.display='';
+  document.getElementById('dSentBtn').disabled=false;
+  document.getElementById('dSentBtn').innerHTML='<i class="bi bi-check2-circle"></i> 전송 완료';
+  try{await navigator.clipboard.writeText(d.sms_message);toast('문자 자동 복사됐어요! 📋')}
+  catch{toast('차감 완료! 복사 버튼 눌러주세요')}
+  loadDashboard(); loadCustomers();
+}
+async function copySms(){
+  try{await navigator.clipboard.writeText(curSmsText)}catch{fallbackCopy(curSmsText)}
+  toast('복사 완료 📋');
+}
+async function markSmsSent(){
+  if(!curDeductSmsId)return;
+  await fetch(`/api/deductions/${curDeductSmsId}/sms_sent`,{method:'POST'});
+  document.getElementById('dSentBtn').disabled=true;
+  document.getElementById('dSentBtn').innerHTML='<i class="bi bi-check2-all"></i> 기록됨';
+  toast('문자 발송 완료 기록!');
+  setTimeout(()=>deductModal.hide(),900);
+  loadDashboard();
+}
+
+// ── Message Modal ──
+function openMsgModal(name, msg) {
+  curSmsText=msg;
+  document.getElementById('msgText').textContent=msg;
+  document.getElementById('msgSentBtn').disabled=false;
+  document.getElementById('msgSentBtn').innerHTML='<i class="bi bi-check2-circle"></i> 발송 완료';
+  msgModal.show();
+}
+async function copyMsg(){
+  try{await navigator.clipboard.writeText(curSmsText)}catch{fallbackCopy(curSmsText)}
+  toast('복사 완료 📋');
+}
+
+// ── Customer Modal ──
+function openAdd(){
+  document.getElementById('cmTitle').textContent='고객 추가';
+  document.getElementById('cmId').value='';
+  ['cmName','cmVisit','cmBal','cmNotes','cmFollowup'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cmExp').value='무제한';
+  document.getElementById('cmType').value='정액권자';
+  custModal.show();
+}
+function openEdit(c){
+  document.getElementById('cmTitle').textContent='고객 수정';
+  document.getElementById('cmId').value=c.id||'';
+  document.getElementById('cmName').value=c.name||'';
+  document.getElementById('cmVisit').value=c.last_visit||'';
+  document.getElementById('cmBal').value=c.balance||0;
+  document.getElementById('cmExp').value=c.expiry||'무제한';
+  document.getElementById('cmType').value=c.customer_type||'정액권자';
+  document.getElementById('cmNotes').value=c.notes||'';
+  document.getElementById('cmFollowup').value=c.follow_up_date||'';
+  custModal.show();
+}
+async function saveCust(){
+  const id=document.getElementById('cmId').value;
+  const payload={
+    name:document.getElementById('cmName').value.trim(),
+    last_visit:document.getElementById('cmVisit').value||null,
+    balance:parseInt(document.getElementById('cmBal').value)||0,
+    expiry:document.getElementById('cmExp').value.trim()||'무제한',
+    customer_type:document.getElementById('cmType').value,
+    notes:document.getElementById('cmNotes').value.trim(),
+    follow_up_date:document.getElementById('cmFollowup').value||null,
+  };
+  if(!payload.name){toast('성명 입력','err');return}
+  const url=id?`/api/customers/${id}`:'/api/customers';
+  const d=await fetch(url,{method:id?'PUT':'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)}).then(r=>r.json());
+  if(d.ok){custModal.hide();toast(id?'수정 완료':'추가 완료');loadAll();}
+  else toast('저장 실패','err');
+}
+
+// ── Settings ──
+async function loadSettings(){
+  const d=await fetch('/api/settings').then(r=>r.json());
+  if(d.slack_webhook) document.getElementById('webhookInput').value=d.slack_webhook;
+}
+async function saveSettings(){
+  const w=document.getElementById('webhookInput').value.trim();
+  await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({slack_webhook:w})});
+  toast('설정 저장 완료 ✅');
+  bootstrap.Modal.getInstance(document.getElementById('setModal'))?.hide();
+}
+async function testSlack(){
+  const d=await fetch('/api/slack/test',{method:'POST'}).then(r=>r.json());
+  toast(d.ok?'슬랙 발송 성공! 📱':('실패: '+(d.error||'')),d.ok?'ok':'err');
+}
+async function manualCheck(){
+  toast('알림 체크 중...','info');
+  const d=await fetch('/api/alerts/check',{method:'POST'}).then(r=>r.json());
+  toast(`체크 완료 (${d.sent}건 발송)`);
+  loadDashboard();
+}
+
+// ── Util ──
+function esc(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n')}
+function fallbackCopy(text){
+  const ta=document.createElement('textarea');
+  ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+}
+</script>
+</body>
+</html>

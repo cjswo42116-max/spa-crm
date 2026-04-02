@@ -1,0 +1,19 @@
+{
+  "name": "다희 스파 비서",
+  "short_name": "스파 비서",
+  "description": "제주 스파 정액권 고객 관리 & 슬랙 알림 시스템",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F5F3FF",
+  "theme_color": "#7C3AED",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/static/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"]
+}
