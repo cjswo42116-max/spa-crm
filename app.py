@@ -1863,7 +1863,7 @@ def main():
         _n1, _n2, _n3 = st.columns(3)
         _n1.metric("신규 매출", f"₩{c.get('신규_매출', 0):,}", f"{c.get('신규_건수', 0)}건 / {c.get('신규_명수', 0)}명")
         _n2.metric("재방 매출", f"₩{c.get('재방_매출', 0):,}", f"{c.get('재방_건수', 0)}건 / {c.get('재방_명수', 0)}명")
-        _n3.metric("손님(워크인) 매출", f"₩{c.get('손님_매출', 0):,}", f"{c.get('손님_건수', 0)}건 / {c.get('손님_명수', 0)}명")
+        _n3.metric("손님(워크인) 매출", f"₩{c.get('손님_매출', 0):,}", f"{c.get('손님_건수', 0)}건")
         st.markdown(f"""<div style="border-left:5px solid {_gc};
             background:#fff;border-radius:10px;padding:1rem 1.4rem;
             box-shadow:0 1px 8px rgba(0,0,0,.06);margin:.5rem 0">
