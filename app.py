@@ -3,6 +3,7 @@
 핸드SOS CSV → 매출/순이익 · 수익구조 · 월별트렌드 · CRM · 담당자 분석
 """
 
+import json
 import os
 import re
 import warnings
@@ -21,6 +22,7 @@ warnings.filterwarnings("ignore")
 # 전역 상수
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 MASTER_PATH          = "spa_master_data.csv"
+CONVERSION_PATH      = "spa_conversion_data.json"
 DIRECTOR_KEYWORD     = "원장님"
 FREELANCER_KEYWORD   = "아로마"
 DIRECTOR_MAX_PER_DAY = 4
@@ -301,6 +303,21 @@ def load_master() -> pd.DataFrame | None:
 
 def save_master(df: pd.DataFrame):
     df.to_csv(MASTER_PATH, index=False, encoding='utf-8-sig')
+
+
+def load_conversion() -> dict:
+    if not os.path.exists(CONVERSION_PATH):
+        return {}
+    try:
+        with open(CONVERSION_PATH, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def save_conversion(data: dict):
+    with open(CONVERSION_PATH, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
 
 def upsert(existing: pd.DataFrame | None, new: pd.DataFrame) -> pd.DataFrame:
@@ -1652,7 +1669,14 @@ def main():
 
         with st.expander("🎯 신규 전환율 입력", expanded=False):
             st.caption("이번 달 신규 고객 중 티켓(정액권) 구매한 명수를 입력하세요.")
-            ticket_bought = st.number_input("티켓 구매 신규 고객 수 (명)", 0, 500, 0, 1, format="%d")
+            _conv_data = load_conversion()
+            _conv_key = sel_period if 'sel_period' in dir() else ""
+            _prev_val = _conv_data.get(_conv_key, 0) if _conv_key else 0
+            ticket_bought = st.number_input("티켓 구매 신규 고객 수 (명)", 0, 500, _prev_val, 1, format="%d")
+            if st.button("💾 저장", key="save_conv") and _conv_key:
+                _conv_data[_conv_key] = int(ticket_bought)
+                save_conversion(_conv_data)
+                st.success("저장됨")
 
         with st.expander("💆 프리랜서 단가표", expanded=False):
             st.markdown("""
@@ -2153,11 +2177,13 @@ def main():
             st.plotly_chart(fig_tr, use_container_width=True)
 
             # 신규 / 재방 월별 트렌드
+            _all_conv = load_conversion()
+            ms['전환율'] = ms['연월'].map(lambda m: _all_conv.get(str(m), None))
             if '신규_건수' in ms.columns and ms['신규_건수'].sum() > 0:
                 st.markdown("#### 👥 신규 / 재방 월별 트렌드")
-                fig_nr = make_subplots(rows=1, cols=2,
-                    subplot_titles=('신규 vs 재방 건수', '신규 : 재방 비율(%)'),
-                    horizontal_spacing=.12)
+                fig_nr = make_subplots(rows=1, cols=3,
+                    subplot_titles=('신규 vs 재방 건수', '신규 : 재방 비율(%)', '신규 전환율(%)'),
+                    horizontal_spacing=.1)
                 fig_nr.add_trace(go.Bar(x=ms['연월'], y=ms['신규_건수'], name='신규',
                                         marker_color='#667eea', opacity=.85), row=1, col=1)
                 fig_nr.add_trace(go.Bar(x=ms['연월'], y=ms['재방_건수'], name='재방',
@@ -2167,6 +2193,13 @@ def main():
                                             marker=dict(size=7)), row=1, col=2)
                 fig_nr.add_hline(y=40, line_dash='dash', line_color='red',
                                   annotation_text='목표 40%', row=1, col=2)
+                _conv_ms = ms.dropna(subset=['전환율'])
+                if not _conv_ms.empty:
+                    fig_nr.add_trace(go.Scatter(x=_conv_ms['연월'], y=_conv_ms['전환율'], name='전환율',
+                                                mode='lines+markers', line=dict(color='#00b894', width=2.5),
+                                                marker=dict(size=7)), row=1, col=3)
+                    fig_nr.add_hline(y=50, line_dash='dash', line_color='red',
+                                      annotation_text='목표 50%', row=1, col=3)
                 fig_nr.update_layout(height=320, barmode='stack',
                     font=dict(family='Malgun Gothic, Apple SD Gothic Neo, sans-serif'),
                     legend=dict(orientation='h', yanchor='bottom', y=1.02, x=0),
