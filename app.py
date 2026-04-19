@@ -2496,6 +2496,20 @@ def main():
                     fig_cat.update_layout(height=320, paper_bgcolor='rgba(0,0,0,0)')
                     st.plotly_chart(fig_cat, use_container_width=True)
 
+                # 상세메뉴별 매출
+                menu_col2 = next((c for c in ('상세메뉴', '메뉴') if c in sisl_df.columns), None)
+                if menu_col2 and '판매가' in sisl_df.columns:
+                    st.markdown("##### 📋 상세메뉴별 매출")
+                    menu_rev = (sisl_df.groupby(menu_col2)['판매가']
+                                .agg(['sum', 'count'])
+                                .reset_index())
+                    menu_rev.columns = ['메뉴', '매출합계', '건수']
+                    menu_rev = menu_rev.sort_values('매출합계', ascending=False)
+                    menu_rev['비중'] = (menu_rev['매출합계'] / menu_rev['매출합계'].sum() * 100).round(1)
+                    menu_rev['매출합계'] = menu_rev['매출합계'].apply(lambda x: f"₩{x:,}")
+                    menu_rev['비중'] = menu_rev['비중'].apply(lambda x: f"{x}%")
+                    st.dataframe(menu_rev, use_container_width=True, hide_index=True)
+
 
     # ══════════════════════════════════════════════════════════════════════════
     # 탭 6 — 🧠 액션 플랜
