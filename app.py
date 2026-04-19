@@ -258,6 +258,10 @@ def load_csv(file) -> pd.DataFrame:
             errors='coerce'
         ).fillna(0).astype(int)
 
+    # ⓪ 방문 컬럼 통일 (핸드SOS '방문' → '방문유형')
+    if '방문' in df.columns and '방문유형' not in df.columns:
+        df.rename(columns={'방문': '방문유형'}, inplace=True)
+
     # ① 2차상세 NaN → 1차메뉴로 채우기
     if '2차상세' in df.columns and '1차메뉴' in df.columns:
         df['2차상세'] = df['2차상세'].fillna(df['1차메뉴'])
@@ -1824,7 +1828,12 @@ def main():
                    delta=f"미차감률 {_und_rate:.1f}%",
                    delta_color="inverse" if _und > 0 else "off")
         dc5.metric("상태", _grade, delta_color="off")
-
+        st.markdown("---")
+        st.markdown("#### 신규 / 재방 / 손님 매출 분리")
+        _n1, _n2, _n3 = st.columns(3)
+        _n1.metric("신규 매출", f"₩{s.get('신규_매출', 0):,}", f"{s.get('신규_건수', 0)}건")
+        _n2.metric("재방 매출", f"₩{s.get('재방_매출', 0):,}", f"{s.get('재방_건수', 0)}건")
+        _n3.metric("손님(워크인) 매출", f"₩{s.get('손님_매출', 0):,}")
         st.markdown(f"""<div style="border-left:5px solid {_gc};
             background:#fff;border-radius:10px;padding:1rem 1.4rem;
             box-shadow:0 1px 8px rgba(0,0,0,.06);margin:.5rem 0">
