@@ -555,6 +555,11 @@ def monthly_summary(df: pd.DataFrame, daily_hours: float, working_days: int) -> 
         fl   = g[mask_fl(g)]
         차감 = int(g['판매가'].sum()) if '판매가' in g.columns else 0
         fl_wages = int(g.loc[mask_fl(g), '인건비'].sum()) if '인건비' in g.columns else 0
+        신규_건수 = 재방_건수 = 0
+        if '방문유형' in grp.columns:
+            신규_건수 = int((grp['방문유형'] == '신규').sum())
+            재방_건수 = int((grp['방문유형'] == '재방').sum())
+        _총 = 신규_건수 + 재방_건수
         rows.append({
             '연월':            str(period),
             '차감_매출':       차감,
@@ -568,6 +573,10 @@ def monthly_summary(df: pd.DataFrame, daily_hours: float, working_days: int) -> 
                 int(fl['시술_시간'].sum()) if '시술_시간' in fl.columns else 0,
                 daily_hours, working_days
             ),
+            '신규_건수':       신규_건수,
+            '재방_건수':       재방_건수,
+            '신규_비율':       round(신규_건수 / _총 * 100, 1) if _총 > 0 else 0,
+            '재방_비율':       round(재방_건수 / _총 * 100, 1) if _총 > 0 else 0,
         })
     return pd.DataFrame(rows).sort_values('연월').reset_index(drop=True)
 
@@ -2142,6 +2151,29 @@ def main():
             fig_tr.update_xaxes(gridcolor='#f0f0f0', tickangle=30)
             fig_tr.update_yaxes(gridcolor='#f0f0f0')
             st.plotly_chart(fig_tr, use_container_width=True)
+
+            # 신규 / 재방 월별 트렌드
+            if '신규_건수' in ms.columns and ms['신규_건수'].sum() > 0:
+                st.markdown("#### 👥 신규 / 재방 월별 트렌드")
+                fig_nr = make_subplots(rows=1, cols=2,
+                    subplot_titles=('신규 vs 재방 건수', '신규 : 재방 비율(%)'),
+                    horizontal_spacing=.12)
+                fig_nr.add_trace(go.Bar(x=ms['연월'], y=ms['신규_건수'], name='신규',
+                                        marker_color='#667eea', opacity=.85), row=1, col=1)
+                fig_nr.add_trace(go.Bar(x=ms['연월'], y=ms['재방_건수'], name='재방',
+                                        marker_color='#f7971e', opacity=.85), row=1, col=1)
+                fig_nr.add_trace(go.Scatter(x=ms['연월'], y=ms['재방_비율'], name='재방 비율',
+                                            mode='lines+markers', line=dict(color='#f7971e', width=2.5),
+                                            marker=dict(size=7)), row=1, col=2)
+                fig_nr.add_hline(y=40, line_dash='dash', line_color='red',
+                                  annotation_text='목표 40%', row=1, col=2)
+                fig_nr.update_layout(height=320, barmode='stack',
+                    font=dict(family='Malgun Gothic, Apple SD Gothic Neo, sans-serif'),
+                    legend=dict(orientation='h', yanchor='bottom', y=1.02, x=0),
+                    paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                fig_nr.update_xaxes(gridcolor='#f0f0f0', tickangle=30)
+                fig_nr.update_yaxes(gridcolor='#f0f0f0')
+                st.plotly_chart(fig_nr, use_container_width=True)
 
             # 월별 요약 테이블
             st.markdown("#### 📋 월별 요약 테이블")
