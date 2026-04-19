@@ -1667,14 +1667,17 @@ def main():
             monthly_material = st.number_input("월 총 재료·비품비 (₩)", 0, 5_000_000, 300_000, 50_000, format="%d")
             target_revenue   = st.number_input("월 목표 차감 매출 (₩)", 0, 50_000_000, 10_000_000, 500_000, format="%d")
 
-        with st.expander("🎯 신규 전환율 입력", expanded=False):
-            st.caption("이번 달 신규 고객 중 티켓(정액권) 구매한 명수를 입력하세요.")
+        with st.expander("🎯 전환율 입력", expanded=False):
             _conv_data = load_conversion()
             _conv_key = sel_period if 'sel_period' in dir() else ""
-            _prev_val = _conv_data.get(_conv_key, 0) if _conv_key else 0
-            ticket_bought = st.number_input("티켓 구매 신규 고객 수 (명)", 0, 500, _prev_val, 1, format="%d")
+            _prev_new  = _conv_data.get(_conv_key, {}).get('신규', 0) if _conv_key else 0
+            _prev_re   = _conv_data.get(_conv_key, {}).get('재티켓', 0) if _conv_key else 0
+            st.caption("신규 티켓 전환")
+            ticket_bought = st.number_input("신규 → 티켓 구매 (명)", 0, 500, _prev_new, 1, format="%d")
+            st.caption("재티켓 (기존 고객 재구매)")
+            reticket_bought = st.number_input("기존 고객 → 재티켓 구매 (명)", 0, 500, _prev_re, 1, format="%d")
             if st.button("💾 저장", key="save_conv") and _conv_key:
-                _conv_data[_conv_key] = int(ticket_bought)
+                _conv_data[_conv_key] = {'신규': int(ticket_bought), '재티켓': int(reticket_bought)}
                 save_conversion(_conv_data)
                 st.success("저장됨")
 
@@ -1910,9 +1913,14 @@ def main():
             _재방pct = _재방건수 / _총건수 * 100
             st.markdown(f"**신규 : 재방 비율** — 신규 {_신규pct:.0f}% : 재방 {_재방pct:.0f}% {'✅ 재방 목표(40%) 달성' if _재방pct >= 40 else '⚠️ 재방 목표 40% 미달'}")
         _신규명수 = c.get('신규_명수', 0)
+        _재방명수 = c.get('재방_명수', 0)
+        _cv1, _cv2 = st.columns(2)
         if _신규명수 > 0 and ticket_bought > 0:
             _conv = ticket_bought / _신규명수 * 100
-            st.info(f"🎯 신규 전환율 (티켓팅): **{ticket_bought}명 / {_신규명수}명 = {_conv:.1f}%** {'✅ 목표 달성' if _conv >= 50 else '⚠️ 목표 50% 미달'}")
+            _cv1.info(f"🎯 신규 전환율: **{ticket_bought}명/{_신규명수}명 = {_conv:.1f}%** {'✅' if _conv >= 50 else '⚠️ 목표 50% 미달'}")
+        if _재방명수 > 0 and reticket_bought > 0:
+            _reconv = reticket_bought / _재방명수 * 100
+            _cv2.info(f"🔄 재티켓률: **{reticket_bought}명/{_재방명수}명 = {_reconv:.1f}%**")
         st.markdown(f"""<div style="border-left:5px solid {_gc};
             background:#fff;border-radius:10px;padding:1rem 1.4rem;
             box-shadow:0 1px 8px rgba(0,0,0,.06);margin:.5rem 0">
@@ -2178,7 +2186,8 @@ def main():
 
             # 신규 / 재방 월별 트렌드
             _all_conv = load_conversion()
-            ms['전환율'] = ms['연월'].map(lambda m: _all_conv.get(str(m), None))
+            ms['전환율']  = ms['연월'].map(lambda m: _all_conv.get(str(m), {}).get('신규') if isinstance(_all_conv.get(str(m)), dict) else _all_conv.get(str(m)))
+            ms['재티켓률'] = ms['연월'].map(lambda m: _all_conv.get(str(m), {}).get('재티켓') if isinstance(_all_conv.get(str(m)), dict) else None)
             if '신규_건수' in ms.columns and ms['신규_건수'].sum() > 0:
                 st.markdown("#### 👥 신규 / 재방 월별 트렌드")
                 fig_nr = make_subplots(rows=1, cols=3,
@@ -2195,11 +2204,16 @@ def main():
                                   annotation_text='목표 40%', row=1, col=2)
                 _conv_ms = ms.dropna(subset=['전환율'])
                 if not _conv_ms.empty:
-                    fig_nr.add_trace(go.Scatter(x=_conv_ms['연월'], y=_conv_ms['전환율'], name='전환율',
+                    fig_nr.add_trace(go.Scatter(x=_conv_ms['연월'], y=_conv_ms['전환율'], name='신규전환율',
                                                 mode='lines+markers', line=dict(color='#00b894', width=2.5),
                                                 marker=dict(size=7)), row=1, col=3)
-                    fig_nr.add_hline(y=50, line_dash='dash', line_color='red',
-                                      annotation_text='목표 50%', row=1, col=3)
+                _reconv_ms = ms.dropna(subset=['재티켓률'])
+                if not _reconv_ms.empty:
+                    fig_nr.add_trace(go.Scatter(x=_reconv_ms['연월'], y=_reconv_ms['재티켓률'], name='재티켓률',
+                                                mode='lines+markers', line=dict(color='#fd79a8', width=2.5),
+                                                marker=dict(size=7)), row=1, col=3)
+                fig_nr.add_hline(y=50, line_dash='dash', line_color='red',
+                                  annotation_text='목표 50%', row=1, col=3)
                 fig_nr.update_layout(height=320, barmode='stack',
                     font=dict(family='Malgun Gothic, Apple SD Gothic Neo, sans-serif'),
                     legend=dict(orientation='h', yanchor='bottom', y=1.02, x=0),
