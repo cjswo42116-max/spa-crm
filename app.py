@@ -290,6 +290,8 @@ def load_master() -> pd.DataFrame | None:
         for col in ('판매가', '결제액', '현금', '카드', '건수'):
             if col in df.columns:
                 df[col] = clean_money(df[col])
+        if '방문' in df.columns and '방문유형' not in df.columns:
+            df.rename(columns={'방문': '방문유형'}, inplace=True)
         return df
     except Exception as e:
         st.error(f"마스터 DB 오류: {e}")
