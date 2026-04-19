@@ -273,6 +273,12 @@ def load_csv(file) -> pd.DataFrame:
     if '건수' in df.columns:
         df = df[df['건수'] > 0]
 
+    # 방문 유형 컬럼 통일 (신규/재방/손님)
+for alias in ('방문', '방문구분', '방문유형'):
+    if alias in df.columns:
+        df.rename(columns={alias: '방문유형'}, inplace=True)
+        break
+    
     return df.reset_index(drop=True)
 
 
