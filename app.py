@@ -428,6 +428,19 @@ def calc_core(df: pd.DataFrame, daily_hours: float, working_days: int,
     rev_per_h   = int(차감_매출 / total_hours) if total_hours > 0 else 0
     avg_min     = round(float(sisl_df['시술_시간'].mean()), 1) if len(sisl_df) > 0 else DEFAULT_DURATION
 
+    # 신규 / 재방 / 손님 매출
+    신규_매출 = 재방_매출 = 손님_매출 = 0
+    신규_건수 = 재방_건수 = 0
+    if '방문유형' in df.columns and '결제액' in df.columns:
+        _신규 = df[df['방문유형'] == '신규']
+        _재방 = df[df['방문유형'] == '재방']
+        _손님 = df[df['방문유형'] == '손님']
+        신규_매출 = int(_신규['결제액'].sum())
+        재방_매출 = int(_재방['결제액'].sum())
+        손님_매출 = int(_손님['결제액'].sum())
+        신규_건수 = len(_신규)
+        재방_건수 = len(_재방)
+
     return {
         '차감_매출':   차감_매출,
         '결제_매출':   결제_매출,
@@ -445,6 +458,11 @@ def calc_core(df: pd.DataFrame, daily_hours: float, working_days: int,
         'dir_util':    util_director(dir_cnt, working_days),
         'fl_util':     util_freelancer(fl_used_min, daily_hours, working_days),
         'df_enriched': df,
+        '신규_매출':   신규_매출,
+        '재방_매출':   재방_매출,
+        '손님_매출':   손님_매출,
+        '신규_건수':   신규_건수,
+        '재방_건수':   재방_건수,
     }
 
 
