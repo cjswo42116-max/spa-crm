@@ -760,16 +760,16 @@ def build_action_stats(df: pd.DataFrame, c: dict, target_revenue: int,
     s['dormant_60'] = int(((g['휴면일'] >= 60) & (g['휴면일'] < 90)).sum())
     s['dormant_90'] = int((g['휴면일'] >= 90).sum())
 
-    if '방문유형' in df.columns and '결제액' in df.columns:
-        신규 = df[df['방문유형'] == '신규']
-        재방 = df[df['방문유형'] == '재방']
-        손님 = df[df['방문유형'] == '손님']
+        if '방문유형' in df.columns and '결제액' in df.columns:
+            신규 = df[df['방문유형'] == '신규']
+            재방 = df[df['방문유형'] == '재방']
+            손님 = df[df['방문유형'] == '손님']
             s['신규_매출'] = int(신규['결제액'].sum())
             s['재방_매출'] = int(재방['결제액'].sum())
             s['손님_매출'] = int(손님['결제액'].sum())
             s['신규_건수'] = len(신규)
             s['재방_건수'] = len(재방)
-    return s
+        return s
 
 
 # ── 운영 기준 헬퍼 함수 (Operating Framework) ────────────────────────────────
