@@ -321,14 +321,21 @@ def save_conversion(data: dict):
 
 
 def upsert(existing: pd.DataFrame | None, new: pd.DataFrame) -> pd.DataFrame:
-    combined = pd.concat([existing, new], ignore_index=True) \
-               if (existing is not None and not existing.empty) else new.copy()
-    keys = [c for c in ('날짜', '고객명', '메뉴', '결제액') if c in combined.columns]
-    if keys:
-        combined.drop_duplicates(subset=keys, keep='last', inplace=True)
-    if '날짜' in combined.columns:
-        combined.sort_values('날짜', ascending=False, inplace=True)
-    return combined.reset_index(drop=True)
+    """새 CSV의 연-월에 해당하는 기존 데이터를 통째로 교체 (row-level dedup 제거).
+    손님처럼 이름이 같은 복수 고객이 dedup으로 날아가는 문제 방지."""
+    if existing is None or existing.empty:
+        result = new.copy()
+    else:
+        if '날짜' in new.columns and '날짜' in existing.columns:
+            # 새 데이터에 있는 연-월을 모두 제거한 뒤 새 데이터 추가
+            new_months = pd.to_datetime(new['날짜'], errors='coerce').dt.to_period('M').dropna().unique()
+            mask_keep = ~pd.to_datetime(existing['날짜'], errors='coerce').dt.to_period('M').isin(new_months)
+            result = pd.concat([existing[mask_keep], new], ignore_index=True)
+        else:
+            result = pd.concat([existing, new], ignore_index=True)
+    if '날짜' in result.columns:
+        result.sort_values('날짜', ascending=False, inplace=True)
+    return result.reset_index(drop=True)
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1889,8 +1896,9 @@ def main():
         dc1, dc2, dc3, dc4, dc5 = st.columns(5)
         dc1.metric("총매출 (결제)", f"₩{_pay:,}",
                    delta=f"전월 ₩{_prev_pay:,}", delta_color="off")
+        _ded_mom = mom_pct(_ded, _prev_ded)
         dc2.metric("차감매출 (실매출)", f"₩{_ded:,}",
-                   delta=mom_pct(_ded, _prev_ded))
+                   delta=(f"{_ded_mom:+.1f}% MoM" if _ded_mom is not None else None))
         dc3.metric("차감률", f"{_rate:.1f}%",
                    delta=(f"{_rate - _prev_rate:+.1f}%p 전월比"
                           if _prev_pay > 0 else None),
