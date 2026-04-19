@@ -1640,6 +1640,10 @@ def main():
             monthly_material = st.number_input("월 총 재료·비품비 (₩)", 0, 5_000_000, 300_000, 50_000, format="%d")
             target_revenue   = st.number_input("월 목표 차감 매출 (₩)", 0, 50_000_000, 10_000_000, 500_000, format="%d")
 
+        with st.expander("🎯 신규 전환율 입력", expanded=False):
+            st.caption("이번 달 신규 고객 중 티켓(정액권) 구매한 명수를 입력하세요.")
+            ticket_bought = st.number_input("티켓 구매 신규 고객 수 (명)", 0, 500, 0, 1, format="%d")
+
         with st.expander("💆 프리랜서 단가표", expanded=False):
             st.markdown("""
 <table class="pt" style="width:100%;border-collapse:collapse">
@@ -1864,6 +1868,10 @@ def main():
         _n1.metric("신규 매출", f"₩{c.get('신규_매출', 0):,}", f"{c.get('신규_건수', 0)}건 / {c.get('신규_명수', 0)}명")
         _n2.metric("재방 매출", f"₩{c.get('재방_매출', 0):,}", f"{c.get('재방_건수', 0)}건 / {c.get('재방_명수', 0)}명")
         _n3.metric("손님(워크인) 매출", f"₩{c.get('손님_매출', 0):,}", f"{c.get('손님_건수', 0)}건")
+        _신규명수 = c.get('신규_명수', 0)
+        if _신규명수 > 0 and ticket_bought > 0:
+            _conv = ticket_bought / _신규명수 * 100
+            st.info(f"🎯 신규 전환율 (티켓팅): **{ticket_bought}명 / {_신규명수}명 = {_conv:.1f}%** {'✅ 목표 달성' if _conv >= 50 else '⚠️ 목표 50% 미달'}")
         st.markdown(f"""<div style="border-left:5px solid {_gc};
             background:#fff;border-radius:10px;padding:1rem 1.4rem;
             box-shadow:0 1px 8px rgba(0,0,0,.06);margin:.5rem 0">
