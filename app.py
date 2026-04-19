@@ -194,7 +194,7 @@ def enrich(df: pd.DataFrame) -> pd.DataFrame:
         df['시술_시간']    = DEFAULT_DURATION
 
     담당 = df['담당'].astype(str).str.strip() if '담당' in df.columns else pd.Series([''] * len(df))
-    is_fl = 담당 == FREELANCER_KEYWORD
+    is_fl = (담당 != DIRECTOR_KEYWORD) & (담당 != '')
     df['인건비'] = 0
     if menu_col:
         df.loc[is_fl, '인건비'] = df.loc[is_fl].apply(
@@ -321,7 +321,7 @@ def _담당(df: pd.DataFrame) -> pd.Series:
 
 
 def mask_dir(df):  return _담당(df) == DIRECTOR_KEYWORD
-def mask_fl(df):   return _담당(df) == FREELANCER_KEYWORD
+def mask_fl(df):   return (_담당(df) != DIRECTOR_KEYWORD) & (_담당(df) != '')
 def mask_sisl(df):
     if '구분' not in df.columns:
         return pd.Series([False] * len(df), index=df.index)
@@ -2398,7 +2398,7 @@ def main():
                 for _, row in grp_sorted.iterrows():
                     nm = str(row['담당']).strip()
                     is_dir = nm == DIRECTOR_KEYWORD
-                    is_fl  = nm == FREELANCER_KEYWORD
+                    is_fl  = (nm != DIRECTOR_KEYWORD) and (nm != '')
                     box    = "bx-o" if is_dir else ("bx-b" if is_fl else "bx-gr")
                     icon   = "👑" if is_dir else ("🤝" if is_fl else "👤")
                     labor_str = ("₩0 (원장님)" if is_dir
