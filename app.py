@@ -430,7 +430,8 @@ def calc_core(df: pd.DataFrame, daily_hours: float, working_days: int,
 
     # 신규 / 재방 / 손님 매출
     신규_매출 = 재방_매출 = 손님_매출 = 0
-    신규_건수 = 재방_건수 = 0
+    신규_건수 = 재방_건수 = 손님_건수 = 0
+    신규_명수 = 재방_명수 = 손님_명수 = 0
     if '방문유형' in df.columns and '결제액' in df.columns:
         _신규 = df[df['방문유형'] == '신규']
         _재방 = df[df['방문유형'] == '재방']
@@ -440,6 +441,11 @@ def calc_core(df: pd.DataFrame, daily_hours: float, working_days: int,
         손님_매출 = int(_손님['결제액'].sum())
         신규_건수 = len(_신규)
         재방_건수 = len(_재방)
+        손님_건수 = len(_손님)
+        if '고객명' in df.columns:
+            신규_명수 = _신규['고객명'].nunique()
+            재방_명수 = _재방['고객명'].nunique()
+            손님_명수 = _손님['고객명'].nunique()
 
     return {
         '차감_매출':   차감_매출,
@@ -463,6 +469,10 @@ def calc_core(df: pd.DataFrame, daily_hours: float, working_days: int,
         '손님_매출':   손님_매출,
         '신규_건수':   신규_건수,
         '재방_건수':   재방_건수,
+        '손님_건수':   손님_건수,
+        '신규_명수':   신규_명수,
+        '재방_명수':   재방_명수,
+        '손님_명수':   손님_명수,
     }
 
 
@@ -1851,9 +1861,9 @@ def main():
         st.markdown("---")
         st.markdown("#### 신규 / 재방 / 손님 매출 분리")
         _n1, _n2, _n3 = st.columns(3)
-        _n1.metric("신규 매출", f"₩{c.get('신규_매출', 0):,}", f"{c.get('신규_건수', 0)}건")
-        _n2.metric("재방 매출", f"₩{c.get('재방_매출', 0):,}", f"{c.get('재방_건수', 0)}건")
-        _n3.metric("손님(워크인) 매출", f"₩{c.get('손님_매출', 0):,}")
+        _n1.metric("신규 매출", f"₩{c.get('신규_매출', 0):,}", f"{c.get('신규_건수', 0)}건 / {c.get('신규_명수', 0)}명")
+        _n2.metric("재방 매출", f"₩{c.get('재방_매출', 0):,}", f"{c.get('재방_건수', 0)}건 / {c.get('재방_명수', 0)}명")
+        _n3.metric("손님(워크인) 매출", f"₩{c.get('손님_매출', 0):,}", f"{c.get('손님_건수', 0)}건 / {c.get('손님_명수', 0)}명")
         st.markdown(f"""<div style="border-left:5px solid {_gc};
             background:#fff;border-radius:10px;padding:1rem 1.4rem;
             box-shadow:0 1px 8px rgba(0,0,0,.06);margin:.5rem 0">
