@@ -273,12 +273,6 @@ def load_csv(file) -> pd.DataFrame:
     if '건수' in df.columns:
         df = df[df['건수'] > 0]
 
-    # 방문 유형 컬럼 통일 (신규/재방/손님)
-for alias in ('방문', '방문구분', '방문유형'):
-    if alias in df.columns:
-        df.rename(columns={alias: '방문유형'}, inplace=True)
-        break
-    
     return df.reset_index(drop=True)
 
 
@@ -759,7 +753,6 @@ def build_action_stats(df: pd.DataFrame, c: dict, target_revenue: int,
     s['dormant_30'] = int(((g['휴면일'] >= 30) & (g['휴면일'] < 60)).sum())
     s['dormant_60'] = int(((g['휴면일'] >= 60) & (g['휴면일'] < 90)).sum())
     s['dormant_90'] = int((g['휴면일'] >= 90).sum())
-
     if '방문유형' in df.columns and '결제액' in df.columns:
         신규 = df[df['방문유형'] == '신규']
         재방 = df[df['방문유형'] == '재방']
