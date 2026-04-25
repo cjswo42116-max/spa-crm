@@ -453,6 +453,12 @@ def calc_core(df: pd.DataFrame, daily_hours: float, working_days: int,
     rev_per_h   = int(차감_매출 / total_hours) if total_hours > 0 else 0
     avg_min     = round(float(sisl_df['시술_시간'].mean()), 1) if len(sisl_df) > 0 else DEFAULT_DURATION
 
+    # 점판 매출
+    점판_mask = df['구분'].astype(str).str.contains('점판', na=False) if '구분' in df.columns else pd.Series([False]*len(df), index=df.index)
+    점판_df   = df[점판_mask]
+    제품_매출 = int(점판_df['결제액'].sum()) if '결제액' in df.columns else 0
+    제품_건수 = len(점판_df)
+
     # 신규 / 재방 / 손님 매출
     신규_매출 = 재방_매출 = 손님_매출 = 0
     신규_건수 = 재방_건수 = 손님_건수 = 0
@@ -498,6 +504,8 @@ def calc_core(df: pd.DataFrame, daily_hours: float, working_days: int,
         '신규_명수':   신규_명수,
         '재방_명수':   재방_명수,
         '손님_명수':   손님_명수,
+        '제품_매출':   제품_매출,
+        '제품_건수':   제품_건수,
     }
 
 
@@ -1913,6 +1921,8 @@ def main():
         _n1.metric("신규 매출", f"₩{c.get('신규_매출', 0):,}", f"{c.get('신규_건수', 0)}건 / {c.get('신규_명수', 0)}명")
         _n2.metric("재방 매출", f"₩{c.get('재방_매출', 0):,}", f"{c.get('재방_건수', 0)}건 / {c.get('재방_명수', 0)}명")
         _n3.metric("손님(워크인) 매출", f"₩{c.get('손님_매출', 0):,}", f"{c.get('손님_건수', 0)}건")
+        _n4, = st.columns(1)
+        _n4.metric("제품(점판) 매출", f"₩{c.get('제품_매출', 0):,}", f"{c.get('제품_건수', 0)}건")
         _신규건수 = c.get('신규_건수', 0)
         _재방건수 = c.get('재방_건수', 0)
         _총건수 = _신규건수 + _재방건수
