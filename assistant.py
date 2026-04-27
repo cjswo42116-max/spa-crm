@@ -3,6 +3,7 @@
 """다희 스파 비서 v3 — 원페이지 AI 비서"""
 
 import os, io, sqlite3, requests, pandas as pd
+import anthropic as _anthropic
 from datetime import datetime, date
 from flask import Flask, render_template, request, jsonify, g
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -77,6 +78,14 @@ def init_db():
         CREATE TABLE IF NOT EXISTS settings (
             key   TEXT PRIMARY KEY,
             value TEXT
+        );
+        CREATE TABLE IF NOT EXISTS wiki (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            title      TEXT NOT NULL,
+            content    TEXT NOT NULL DEFAULT '',
+            category   TEXT DEFAULT '일반',
+            created_at TEXT DEFAULT (datetime('now','localtime')),
+            updated_at TEXT DEFAULT (datetime('now','localtime'))
         );
     """)
     conn.commit()
@@ -686,6 +695,117 @@ def api_sales_summary():
     data = [dict(r) for r in rows]
     data.reverse()
     return jsonify(data)
+
+
+# ─── Routes: 위키 ─────────────────────────────────────────────────────────────
+
+@app.route("/api/wiki", methods=["GET"])
+def api_wiki_get():
+    db = get_db()
+    rows = db.execute("SELECT * FROM wiki ORDER BY category, title").fetchall()
+    return jsonify([dict(r) for r in rows])
+
+@app.route("/api/wiki", methods=["POST"])
+def api_wiki_post():
+    db = get_db()
+    d = request.json or {}
+    db.execute(
+        "INSERT INTO wiki (title, content, category) VALUES (?,?,?)",
+        (d.get("title","").strip(), d.get("content",""), d.get("category","일반"))
+    )
+    db.commit()
+    return jsonify({"ok": True})
+
+@app.route("/api/wiki/<int:wid>", methods=["PUT"])
+def api_wiki_put(wid):
+    db = get_db()
+    d = request.json or {}
+    db.execute(
+        "UPDATE wiki SET title=?, content=?, category=?, updated_at=datetime('now','localtime') WHERE id=?",
+        (d.get("title","").strip(), d.get("content",""), d.get("category","일반"), wid)
+    )
+    db.commit()
+    return jsonify({"ok": True})
+
+@app.route("/api/wiki/<int:wid>", methods=["DELETE"])
+def api_wiki_delete(wid):
+    db = get_db()
+    db.execute("DELETE FROM wiki WHERE id=?", (wid,))
+    db.commit()
+    return jsonify({"ok": True})
+
+
+# ─── Routes: LLM 채팅 ─────────────────────────────────────────────────────────
+
+@app.route("/api/chat", methods=["POST"])
+def api_chat():
+    d = request.json or {}
+    message = d.get("message", "").strip()
+    if not message:
+        return jsonify({"error": "메시지를 입력해주세요"}), 400
+
+    db = get_db()
+    key_row = db.execute("SELECT value FROM settings WHERE key='claude_api_key'").fetchone()
+    api_key = (key_row["value"] if key_row else None) or os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return jsonify({"error": "Claude API 키가 설정되지 않았습니다. 설정에서 API 키를 입력해주세요."}), 400
+
+    wiki_rows = db.execute("SELECT title, category, content FROM wiki ORDER BY category, title").fetchall()
+    wiki_text = ""
+    if wiki_rows:
+        wiki_text = "\n\n## 위키 (운영 지식베이스)\n"
+        for w in wiki_rows:
+            wiki_text += f"\n### [{w['category']}] {w['title']}\n{w['content']}\n"
+
+    today = date.today()
+    customers = db.execute("SELECT * FROM customers").fetchall()
+    total_balance = sum(c["balance"] or 0 for c in customers)
+    dormant, expiring = [], []
+    for c in customers:
+        if c["last_visit"]:
+            try:
+                days = (today - datetime.strptime(c["last_visit"], "%Y-%m-%d").date()).days
+                if days >= 15:
+                    dormant.append(f"{c['name']}({days}일)")
+            except ValueError:
+                pass
+        exp = (c["expiry"] or "").strip()
+        if exp and exp not in ("무제한", "", "None"):
+            try:
+                dl = (datetime.strptime(exp, "%Y-%m-%d").date() - today).days
+                if 0 <= dl <= 30:
+                    expiring.append(f"{c['name']}(D-{dl})")
+            except ValueError:
+                pass
+
+    crm_ctx = (
+        f"\n\n## 현재 CRM 현황 (오늘: {today})\n"
+        f"- 전체 고객 수: {len(customers)}명\n"
+        f"- 총 잔여액: {total_balance:,}원\n"
+        f"- 15일 미방문 ({len(dormant)}명): {', '.join(dormant[:10]) or '없음'}\n"
+        f"- 30일 내 만료 ({len(expiring)}명): {', '.join(expiring[:10]) or '없음'}\n"
+    )
+
+    system_prompt = (
+        "당신은 다희 스파의 AI 비서입니다. 스파 운영, 고객 관리, 매출 분석에 대한 질문에 답변합니다. "
+        "한국어로 친절하고 간결하게 답변하세요."
+        + wiki_text
+        + crm_ctx
+    )
+
+    try:
+        client = _anthropic.Anthropic(api_key=api_key)
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1024,
+            system=system_prompt,
+            messages=[{"role": "user", "content": message}]
+        )
+        return jsonify({"ok": True, "reply": resp.content[0].text})
+    except _anthropic.AuthenticationError:
+        return jsonify({"error": "API 키가 올바르지 않습니다"}), 401
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # ─── Scheduler ────────────────────────────────────────────────────────────────

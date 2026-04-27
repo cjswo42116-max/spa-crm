@@ -137,6 +137,30 @@
     /* Collapse arrow */
     .collapse-arrow{transition:transform .25s;font-size:1rem;color:#9CA3AF}
     .collapsed .collapse-arrow{transform:rotate(-90deg)}
+
+    /* Wiki */
+    .wiki-item{background:#FAFAFA;border-radius:10px;padding:10px 12px;margin-bottom:6px;
+               border-left:3px solid #DDD6FE}
+    .wiki-title{font-size:.85rem;font-weight:700;color:#374151}
+    .wiki-cat{display:inline-block;background:var(--pu2);color:var(--pu);border-radius:6px;
+              padding:1px 7px;font-size:.65rem;font-weight:700;margin-left:4px}
+    .wiki-content{font-size:.76rem;color:#6B7280;margin-top:4px;white-space:pre-wrap;line-height:1.55}
+
+    /* Chat */
+    .chat-wrap{display:flex;flex-direction:column;gap:8px;min-height:60px;max-height:360px;
+               overflow-y:auto;padding:2px 0 8px}
+    .chat-msg{max-width:88%;border-radius:14px;padding:10px 14px;font-size:.8rem;line-height:1.6}
+    .chat-user{align-self:flex-end;background:var(--pu);color:white;border-bottom-right-radius:4px}
+    .chat-bot{align-self:flex-start;background:#F3F4F6;color:#111827;border-bottom-left-radius:4px;
+              white-space:pre-wrap}
+    .chat-input-row{display:flex;gap:8px;margin-top:8px}
+    .chat-input{flex:1;border:1.5px solid #DDD6FE;border-radius:10px;padding:9px 12px;
+                font-size:.82rem;resize:none;line-height:1.4;font-family:inherit}
+    .chat-input:focus{outline:none;border-color:var(--pu)}
+    .chat-send{background:var(--pu);color:white;border:none;border-radius:10px;
+               padding:9px 14px;font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap}
+    .chat-send:disabled{background:#C4B5FD;cursor:not-allowed}
+    .chat-thinking{color:#9CA3AF;font-size:.75rem;font-style:italic;padding:4px 0}
   </style>
 </head>
 <body>
@@ -264,6 +288,40 @@
         <tbody id="custTbl"></tbody>
       </table>
     </div>
+  </div>
+</div>
+
+<!-- ── AI 채팅 ── -->
+<div class="sec" id="sec-chat">
+  <div class="sec-hdr" onclick="toggleSec(this)">
+    <h2><i class="bi bi-robot" style="color:var(--pu)"></i> AI 비서 채팅</h2>
+    <i class="bi bi-chevron-down collapse-arrow"></i>
+  </div>
+  <div class="sec-body">
+    <div class="chat-wrap" id="chatWrap">
+      <div class="chat-bot chat-msg">안녕하세요! 다희 스파 AI 비서입니다. 고객 관리, 운영, 위키 내용에 대해 무엇이든 물어보세요.</div>
+    </div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="chatInput" rows="2"
+                placeholder="예) 오늘 미방문 고객 현황 알려줘, 아로마 시술 절차는?"></textarea>
+      <button class="chat-send" id="chatSendBtn" onclick="sendChat()">
+        <i class="bi bi-send-fill"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 위키 ── -->
+<div class="sec" id="sec-wiki">
+  <div class="sec-hdr" onclick="toggleSec(this)">
+    <h2><i class="bi bi-journal-bookmark-fill" style="color:var(--pu)"></i> 운영 위키</h2>
+    <div class="d-flex align-items-center gap-2" onclick="event.stopPropagation()">
+      <button class="btn-sm-pu" onclick="openWikiAdd()"><i class="bi bi-plus-lg"></i> 추가</button>
+      <i class="bi bi-chevron-down collapse-arrow"></i>
+    </div>
+  </div>
+  <div class="sec-body" id="wikiList">
+    <div style="color:#9CA3AF;font-size:.8rem;text-align:center;padding:8px 0">위키 항목 없음 — 추가 버튼으로 운영 지식을 등록하세요</div>
   </div>
 </div>
 
@@ -402,16 +460,56 @@
   </div>
 </div>
 
+<!-- 위키 추가/수정 모달 -->
+<div class="modal fade" id="wikiModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="wikiModalTitle">위키 추가</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4">
+        <input type="hidden" id="wikiId">
+        <div class="row g-2 mb-2">
+          <div class="col-8">
+            <label class="form-label fw-semibold" style="font-size:.8rem">제목 *</label>
+            <input type="text" class="form-control form-control-sm" id="wikiTitle" placeholder="예) 아로마 시술 절차">
+          </div>
+          <div class="col-4">
+            <label class="form-label fw-semibold" style="font-size:.8rem">카테고리</label>
+            <input type="text" class="form-control form-control-sm" id="wikiCat" placeholder="시술">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold" style="font-size:.8rem">내용</label>
+          <textarea class="notes-input" id="wikiContent" rows="7"
+                    placeholder="이 항목에 대한 설명, 절차, 주의사항 등을 입력하세요."></textarea>
+        </div>
+        <button class="btn-pu mb-2" onclick="saveWiki()">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 설정 모달 -->
 <div class="modal fade" id="setModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-slack text-warning"></i> 슬랙 설정</h5>
+        <h5 class="modal-title"><i class="bi bi-gear-fill" style="color:var(--pu)"></i> 설정</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body px-4 pb-4">
-        <label class="form-label fw-semibold" style="font-size:.82rem">Slack Incoming Webhook URL</label>
+        <label class="form-label fw-semibold" style="font-size:.82rem">
+          <i class="bi bi-robot" style="color:var(--pu)"></i> Claude API 키
+        </label>
+        <input type="password" class="form-control form-control-sm mb-1" id="claudeKeyInput"
+               placeholder="sk-ant-...">
+        <div class="form-text mb-3">Anthropic Console에서 발급 — AI 채팅 기능에 사용</div>
+        <hr class="my-2">
+        <label class="form-label fw-semibold" style="font-size:.82rem">
+          <i class="bi bi-slack text-warning"></i> Slack Incoming Webhook URL
+        </label>
         <input type="url" class="form-control form-control-sm mb-1" id="webhookInput"
                placeholder="https://hooks.slack.com/services/...">
         <div class="form-text mb-3">슬랙 → 채널 → Incoming Webhooks에서 복사</div>
@@ -444,6 +542,7 @@
 const deductModal = new bootstrap.Modal('#deductModal');
 const msgModal    = new bootstrap.Modal('#msgModal');
 const custModal   = new bootstrap.Modal('#custModal');
+const wikiModal   = new bootstrap.Modal('#wikiModal');
 
 // ── State ──
 let curDeductId=null, curDeductSmsId=null, curSmsText='';
@@ -460,7 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadAll() {
-  await Promise.all([loadDashboard(), loadCustomers(), loadChart()]);
+  await Promise.all([loadDashboard(), loadCustomers(), loadChart(), loadWiki()]);
 }
 
 // ── Section collapse ──
@@ -862,11 +961,15 @@ async function saveCust(){
 async function loadSettings(){
   const d=await fetch('/api/settings').then(r=>r.json());
   if(d.slack_webhook) document.getElementById('webhookInput').value=d.slack_webhook;
+  if(d.claude_api_key) document.getElementById('claudeKeyInput').value=d.claude_api_key;
 }
 async function saveSettings(){
   const w=document.getElementById('webhookInput').value.trim();
+  const k=document.getElementById('claudeKeyInput').value.trim();
+  const payload={slack_webhook:w};
+  if(k) payload.claude_api_key=k;
   await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({slack_webhook:w})});
+    body:JSON.stringify(payload)});
   toast('설정 저장 완료 ✅');
   bootstrap.Modal.getInstance(document.getElementById('setModal'))?.hide();
 }
@@ -880,6 +983,117 @@ async function manualCheck(){
   toast(`체크 완료 (${d.sent}건 발송)`);
   loadDashboard();
 }
+
+// ── Wiki ──
+let wikiData = [];
+async function loadWiki(){
+  wikiData = await fetch('/api/wiki').then(r=>r.json());
+  renderWiki();
+}
+function renderWiki(){
+  const el=document.getElementById('wikiList');
+  if(!wikiData.length){
+    el.innerHTML='<div style="color:#9CA3AF;font-size:.8rem;text-align:center;padding:8px 0">위키 항목 없음 — 추가 버튼으로 운영 지식을 등록하세요</div>';
+    return;
+  }
+  el.innerHTML=wikiData.map(w=>`
+    <div class="wiki-item">
+      <div class="d-flex justify-content-between align-items-start">
+        <div class="wiki-title">${w.title}<span class="wiki-cat">${w.category||'일반'}</span></div>
+        <div class="d-flex gap-1">
+          <button class="btn btn-sm p-1" style="background:var(--pu2);color:var(--pu);border:none;border-radius:6px"
+                  onclick='openWikiEdit(${JSON.stringify(w).replace(/"/g,"&quot;")})'>
+            <i class="bi bi-pencil" style="font-size:.72rem"></i>
+          </button>
+          <button class="btn btn-sm p-1" style="background:#FEE2E2;color:var(--rd);border:none;border-radius:6px"
+                  onclick="deleteWiki(${w.id})">
+            <i class="bi bi-trash" style="font-size:.72rem"></i>
+          </button>
+        </div>
+      </div>
+      ${w.content?`<div class="wiki-content">${w.content.substring(0,120)}${w.content.length>120?'…':''}</div>`:''}
+    </div>`).join('');
+}
+function openWikiAdd(){
+  document.getElementById('wikiModalTitle').textContent='위키 추가';
+  document.getElementById('wikiId').value='';
+  ['wikiTitle','wikiContent'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('wikiCat').value='일반';
+  wikiModal.show();
+}
+function openWikiEdit(w){
+  document.getElementById('wikiModalTitle').textContent='위키 수정';
+  document.getElementById('wikiId').value=w.id;
+  document.getElementById('wikiTitle').value=w.title||'';
+  document.getElementById('wikiCat').value=w.category||'일반';
+  document.getElementById('wikiContent').value=w.content||'';
+  wikiModal.show();
+}
+async function saveWiki(){
+  const id=document.getElementById('wikiId').value;
+  const payload={
+    title:document.getElementById('wikiTitle').value.trim(),
+    category:document.getElementById('wikiCat').value.trim()||'일반',
+    content:document.getElementById('wikiContent').value.trim()
+  };
+  if(!payload.title){toast('제목을 입력해주세요','err');return}
+  const url=id?`/api/wiki/${id}`:'/api/wiki';
+  const d=await fetch(url,{method:id?'PUT':'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)}).then(r=>r.json());
+  if(d.ok){wikiModal.hide();toast(id?'위키 수정 완료':'위키 추가 완료');loadWiki();}
+  else toast('저장 실패','err');
+}
+async function deleteWiki(id){
+  if(!confirm('이 위키 항목을 삭제할까요?')) return;
+  const d=await fetch(`/api/wiki/${id}`,{method:'DELETE'}).then(r=>r.json());
+  if(d.ok){toast('삭제 완료');loadWiki();}
+  else toast('삭제 실패','err');
+}
+
+// ── Chat ──
+const chatMessages=[];
+async function sendChat(){
+  const input=document.getElementById('chatInput');
+  const msg=input.value.trim();
+  if(!msg) return;
+  input.value='';
+  appendChatMsg(msg,'user');
+  const btn=document.getElementById('chatSendBtn');
+  btn.disabled=true;
+  const thinking=document.createElement('div');
+  thinking.className='chat-thinking';
+  thinking.textContent='답변 생성 중...';
+  document.getElementById('chatWrap').appendChild(thinking);
+  scrollChat();
+  try{
+    const d=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:msg})}).then(r=>r.json());
+    thinking.remove();
+    if(d.ok) appendChatMsg(d.reply,'bot');
+    else appendChatMsg('⚠️ '+d.error,'bot');
+  }catch(e){
+    thinking.remove();
+    appendChatMsg('⚠️ 오류가 발생했습니다','bot');
+  }
+  btn.disabled=false;
+  input.focus();
+}
+function appendChatMsg(text,role){
+  const el=document.createElement('div');
+  el.className=`chat-msg chat-${role==='user'?'user':'bot'}`;
+  el.textContent=text;
+  document.getElementById('chatWrap').appendChild(el);
+  scrollChat();
+}
+function scrollChat(){
+  const w=document.getElementById('chatWrap');
+  w.scrollTop=w.scrollHeight;
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('chatInput').addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}
+  });
+});
 
 // ── Util ──
 function esc(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n')}
